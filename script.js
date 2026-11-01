@@ -46,7 +46,7 @@ function buatStateAwal() {
 
 function simpan() {
   try {
-    localStorage.setItem(KUNCI_SIMPAN, JSON.stringify(state));
+   
   } catch (e) {
     /* abaikan */
   }
