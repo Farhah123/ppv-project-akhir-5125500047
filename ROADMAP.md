@@ -7,4 +7,4 @@
 - [x] Tidak ada variabel global aplikasi dan tidak ada `onclick`
 - [x] Dikerjakan di cabang `refactor/modul` dengan commit `refactor:` per langkah
 - [x] Peta modul ditulis di `MODULE_MAP.md`
-- [ ] Merge cabang `refactor/modul` ke `main`
+- [x] Merge cabang `refactor/modul` ke `main`
