@@ -1,23 +1,23 @@
 /* =========================================================
-   script.js (calon main.js) - titik masuk aplikasi. Menghubungkan data (state.js),
+   main.js - titik masuk aplikasi. Menghubungkan data (state.js),
    tampilan (tampilan.js), pustaka UI, dan bunyi, lalu memasang
    semua event dengan addEventListener.
    Mengimpor: ui-pustaka.js, konfigurasi.js, state.js, tampilan.js, bunyi.js
    ========================================================= */
-import { UI } from './src/ui-pustaka.js';
-import { DURASI_MEMUAT } from './src/konfigurasi.js';
+import { UI } from './ui-pustaka.js';
+import { DURASI_MEMUAT } from './konfigurasi.js';
 import {
   state, simpan, muat, idKosong, validasiNama, validasiWarna, validasiCari,
   tambahAnggota, hapusAnggota, setAktif, setKosong,
   salinState, pulihkanState, resetState, hitungWaktuCocok
-} from './src/state.js';
+} from './state.js';
 import {
   el, status, tampilkanGalatNama, renderPilihAnggota, perbaruiStatusAnggota,
   renderSemua, buatGrid, perbaruiSel, perbaruiGrid, resetHasil,
   tampilkanHasilGalat, renderHasil, sorot, hapusSorotan, tandaiBasi,
   tampilkanTooltip, sembunyikanTooltip, show, getar
-} from './src/tampilan.js';
-import { bunyi, alihBunyi } from './src/bunyi.js';
+} from './tampilan.js';
+import { bunyi, alihBunyi } from './bunyi.js';
 
 
 /* ----- Aksi: data berubah, lalu tampilan diperbarui ----- */
