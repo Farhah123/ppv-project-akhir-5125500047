@@ -4,7 +4,7 @@
    Bila pustaka diganti suatu hari nanti, cukup berkas ini yang diubah.
    Bootstrap 5.3.3 harus dimuat lebih dulu di index.html.
    ========================================================= */
-window.UI = (() => {
+export const UI = (() => {
   const ADA_BS = typeof bootstrap !== 'undefined';   // false bila CDN gagal dimuat (misalnya offline)
 
   const elToast = document.getElementById('toast');

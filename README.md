@@ -57,3 +57,10 @@ Pengujian dilakukan dengan mencoba menandai jam kosong dan mencari waktu cocok, 
 - **Tema:** diubah lewat variabel CSS Bootstrap (`--bs-toast-bg`, `--bs-modal-bg`, `--bs-offcanvas-bg`, dan lainnya) di bagian 9 `style.css`.
 - **Pembungkus:** semua panggilan API JavaScript Bootstrap hanya ada di `ui-pustaka.js`; `script.js` memakai `UI.toast()`, `UI.konfirmasi()`, dan `UI.bukaPintasan()`.
 - **Penyesuaian:** kelas `.tooltip` buatan sendiri diganti `.tip-kotak` karena bentrok dengan `.tooltip` milik Bootstrap. Toast buatan sendiri diganti Bootstrap Toast.
+## Catatan penggunaan AI
+
+Pemecahan kode menjadi modul ES (Tugas P11, Sprint 3) dibantu oleh Claude (Anthropic).
+
+- **Dibantu AI:** isi `src/konfigurasi.js`, `src/state.js`, `src/tampilan.js`, `src/bunyi.js`, `src/main.js`, serta perubahan `export` pada `src/ui-pustaka.js`, dan draf `MODULE_MAP.md`. Kode ini dihasilkan dengan memindahkan dan memisahkan kode `script.js` milik saya sendiri tanpa mengubah perilakunya.
+- **Prompt utama:** "tugas P11 pecah kode proyek jadi modul ES, langkah selanjutnya apa" (dengan melampirkan berkas tugas dan kode proyek), lalu dilanjutkan percakapan langkah demi langkah.
+- **Dikerjakan sendiri:** logika aplikasi asli (`script.js` sebelum refactor), pengujian di browser, dan seluruh commit di Git.

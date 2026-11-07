@@ -1,0 +1,8 @@
+{
+  "name": "Katalog Karya PENS",
+  "short_name": "KatalogPENS",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff69b4"
+}
