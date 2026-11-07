@@ -1,5 +1,8 @@
 import { UI } from './src/ui-pustaka.js';
-'use strict';
+import {
+  HARI, HARI_SINGKAT, JAM_MULAI, JAM_AKHIR, MAKS_ANGGOTA,
+  MAKS_HURUF_NAMA, MAKS_HASIL_TAMPIL, DURASI_MEMUAT, KUNCI_SIMPAN, WARNA
+} from './src/konfigurasi.js';
 
 /* =========================================================
    CARI JAM KOSONG BARENG
@@ -14,25 +17,11 @@ import { UI } from './src/ui-pustaka.js';
    ========================================================= */
 
 
+
 /* =========================================================
    1. PENGATURAN
+   (konstanta dipindah ke src/konfigurasi.js, diimpor di atas)
    ========================================================= */
-const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-const HARI_SINGKAT = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-
-const JAM_MULAI = 7;
-const JAM_AKHIR = 21;
-const MAKS_ANGGOTA = 8;
-const MAKS_HURUF_NAMA = 20;
-const MAKS_HASIL_TAMPIL = 8;
-const DURASI_MEMUAT = 1000;
-const KUNCI_SIMPAN = 'cariJamKosongBareng.v1';
-
-const WARNA = [
-  '#EF7F63', '#5B5F97', '#F2BF4A', '#C94F7C',
-  '#8E92B0', '#E88BA6', '#C99A6B', '#7B6FD0'
-];
-
 const kurangiGerak = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 
