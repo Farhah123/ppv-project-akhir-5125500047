@@ -1,8 +1,13 @@
 import { UI } from './src/ui-pustaka.js';
 import {
-  HARI, HARI_SINGKAT, JAM_MULAI, JAM_AKHIR, MAKS_ANGGOTA,
-  MAKS_HURUF_NAMA, MAKS_HASIL_TAMPIL, DURASI_MEMUAT, KUNCI_SIMPAN, WARNA
+  HARI, HARI_SINGKAT, JAM_MULAI, JAM_AKHIR, MAKS_HASIL_TAMPIL, DURASI_MEMUAT
 } from './src/konfigurasi.js';
+import {
+  state, simpan, muat, anggotaById, jumlahJam, idKosong,
+  validasiNama, validasiWarna, validasiCari, warnaBerikut,
+  tambahAnggota, hapusAnggota, setAktif, setKosong,
+  salinState, pulihkanState, resetState, hitungWaktuCocok
+} from './src/state.js';
 
 /* =========================================================
    CARI JAM KOSONG BARENG
@@ -17,62 +22,17 @@ import {
    ========================================================= */
 
 
-
 /* =========================================================
    1. PENGATURAN
-   (konstanta dipindah ke src/konfigurasi.js, diimpor di atas)
    ========================================================= */
+// Angka pengaturan ada di src/konfigurasi.js.
 const kurangiGerak = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 
 /* =========================================================
    2. DATA (STATE)
+   Dipindah ke src/state.js, diimpor di atas.
    ========================================================= */
-let state = buatStateAwal();
-
-function buatStateAwal() {
-  return { anggota: [], kosong: {}, aktifId: null, durasiMin: 1, idBerikut: 1 };
-}
-
-function simpan() {
-  try {
-   
-  } catch (e) {
-    /* abaikan */
-  }
-}
-
-function muat() {
-  try {
-    const mentah = localStorage.getItem(KUNCI_SIMPAN);
-    if (!mentah) return;
-
-    const data = JSON.parse(mentah);
-    if (!Array.isArray(data.anggota) || typeof data.kosong !== 'object') return;
-
-    state = Object.assign(buatStateAwal(), data);
-    state.durasiMin = 1;
-
-    const GANTI = {
-      '#6bcb9b': '#5b5f97',
-      '#4fb3bf': '#8e92b0'
-    };
-
-    state.anggota.forEach(a => {
-      if (GANTI[a.warna]) a.warna = GANTI[a.warna];
-    });
-
-    state.anggota.forEach(a => {
-      if (!state.kosong[a.id]) state.kosong[a.id] = {};
-    });
-
-    if (!anggotaById(state.aktifId)) {
-      state.aktifId = state.anggota.length ? state.anggota[0].id : null;
-    }
-  } catch (e) {
-    state = buatStateAwal();
-  }
-}
 
 
 /* =========================================================
@@ -96,17 +56,8 @@ const el = {
   tooltip: document.getElementById('tooltip')
 };
 
-const kunci = (hari, jam) => `${hari}-${jam}`;
 const fmtJam = jam => String(jam).padStart(2, '0') + '.00';
-const anggotaById = id => state.anggota.find(a => a.id === id);
-const jumlahJam = id => Object.keys(state.kosong[id] || {}).length;
 
-function idKosong(hari, jam) {
-  const k = kunci(hari, jam);
-  return state.anggota
-    .filter(a => state.kosong[a.id] && state.kosong[a.id][k])
-    .map(a => a.id);
-}
 
 function esc(teks) {
   return String(teks).replace(/[&<>"']/g, c => (
@@ -124,57 +75,12 @@ function gabung(daftar) {
    4. ANGGOTA + VALIDASI NAMA
    ========================================================= */
 
-function validasiNama(nama) {
-  const bersih = nama.trim().replace(/\s+/g, ' ');
-
-  if (!bersih) return 'Isi nama temanmu dulu ya 😊';
-
-  if (bersih.length > MAKS_HURUF_NAMA) {
-    return `Namanya terlalu panjang (${bersih.length} huruf). Pakai maksimal ${MAKS_HURUF_NAMA} huruf, misalnya nama panggilan.`;
-  }
-
-  if (!/^[\p{L}\p{N} .'-]+$/u.test(bersih)) {
-    return 'Pakai huruf atau angka saja ya, tanpa simbol atau emoji.';
-  }
-
-  if (state.anggota.some(a => a.nama.toLowerCase() === bersih.toLowerCase())) {
-    return `${bersih} sudah ada di daftar. Kalau ada dua orang bernama sama, tambahkan inisial, misalnya "${bersih} R".`;
-  }
-
-  if (state.anggota.length >= MAKS_ANGGOTA) {
-    return `Satu kelompok maksimal ${MAKS_ANGGOTA} anggota.`;
-  }
-
-  return '';
-}
 
 
 /* ----- Warna anggota ----- */
 
-function jarakWarna(a, b) {
-  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-  const x = rgb(a), y = rgb(b);
-  return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
-}
 
-function warnaBerikut() {
-  const dipakai = state.anggota.map(a => a.warna.toLowerCase());
-  return (WARNA.find(w => !dipakai.includes(w.toLowerCase())) || WARNA[0]).toLowerCase();
-}
 
-function validasiWarna(warna) {
-  if (jarakWarna(warna, '#F1E4D0') < 60) {
-    return 'Warnanya terlalu pucat, tidak kelihatan di tabel. Pilih yang lebih pekat ya.';
-  }
-
-  const mirip = state.anggota.find(a => jarakWarna(a.warna, warna) < 45);
-
-  if (mirip) {
-    return `Warnanya terlalu mirip dengan ${mirip.nama}. Pilih warna lain supaya mudah dibedakan.`;
-  }
-
-  return '';
-}
 
 function tampilkanGalatNama(pesan) {
   el.galatNama.textContent = pesan;
@@ -182,41 +88,26 @@ function tampilkanGalatNama(pesan) {
   el.inputNama.setAttribute('aria-invalid', pesan ? 'true' : 'false');
 }
 
-function tambahAnggota(nama, warna) {
-  const baru = { id: state.idBerikut++, nama, warna };
-
-  state.anggota.push(baru);
-  state.kosong[baru.id] = {};
-  state.aktifId = baru.id;
-
+function aksiTambahAnggota(nama, warna) {
+  tambahAnggota(nama, warna);
   setelahUbah();
 }
 
-function hapusAnggota(id) {
-  const a = anggotaById(id);
-  if (!a) return;
-
-  const cadangan = JSON.stringify(state);
-
-  state.anggota = state.anggota.filter(x => x.id !== id);
-  delete state.kosong[id];
-
-  if (state.aktifId === id) {
-    state.aktifId = state.anggota.length ? state.anggota[0].id : null;
-  }
+function aksiHapusAnggota(id) {
+  const hasil = hapusAnggota(id);
+  if (!hasil) return;
 
   hapusSorotan();
   setelahUbah();
   el.inputNama.focus();
 
-  tampilkanToast(`${a.nama} dihapus dari kelompok.`, 'Urungkan', () => pulihkan(cadangan));
+  tampilkanToast(`${hasil.nama} dihapus dari kelompok.`, 'Urungkan', () => aksiPulihkan(hasil.cadangan));
 }
 
-function pilihAktif(id, beriTahu) {
-  const a = anggotaById(id);
+function aksiPilihAktif(id, beriTahu) {
+  const a = setAktif(id);
   if (!a) return;
 
-  state.aktifId = id;
   simpan();
   renderPilihAnggota();
   perbaruiStatusAnggota();
@@ -225,11 +116,15 @@ function pilihAktif(id, beriTahu) {
   if (beriTahu) tampilkanToast(`Sekarang mengisi jadwal ${a.nama}.`);
 }
 
-function pulihkan(cadangan) {
-  state = JSON.parse(cadangan);
+function aksiPulihkan(cadangan) {
+  pulihkanState(cadangan);
   setelahUbah();
   resetHasil();
 }
+
+
+
+
 
 function setelahUbah() {
   simpan();
@@ -374,11 +269,7 @@ function terapkanSel(sel, nilai) {
   const sudah = sel.classList.contains('milik');
   if (sudah === nilai) return;
 
-  const k = kunci(sel.dataset.hari, sel.dataset.jam);
-  const peta = state.kosong[state.aktifId] || (state.kosong[state.aktifId] = {});
-
-  if (nilai) peta[k] = true;
-  else delete peta[k];
+  setKosong(sel.dataset.hari, sel.dataset.jam, nilai);
 
   perbaruiSel(sel);
   perbaruiStatusAnggota();
@@ -548,22 +439,6 @@ el.jadwal.addEventListener('focusout', sembunyikanTooltip);
 let hasilTampil = false;
 let sedangMencari = false;
 
-function validasiCari() {
-  if (state.anggota.length < 2) {
-    return 'Tambahkan minimal 2 anggota supaya ada yang dicocokkan.';
-  }
-
-  const total = state.anggota.reduce(
-    (jumlah, a) => jumlah + jumlahJam(a.id),
-    0
-  );
-
-  if (total === 0) {
-    return 'Belum ada jam kosong yang ditandai. Klik kotak di tabel dulu, lalu cari lagi.';
-  }
-
-  return '';
-}
 
 function klikCari() {
   if (sedangMencari) return;
@@ -605,70 +480,6 @@ function klikCari() {
   }, DURASI_MEMUAT);
 }
 
-function hitungWaktuCocok() {
-  const n = state.anggota.length;
-  const kandidat = [];
-
-  for (let hari = 0; hari < HARI.length; hari++) {
-    for (let mulai = JAM_MULAI; mulai < JAM_AKHIR; mulai++) {
-      let irisan = null;
-
-      for (let akhir = mulai; akhir < JAM_AKHIR; akhir++) {
-        const ids = idKosong(hari, akhir);
-
-        irisan = irisan === null
-          ? ids
-          : irisan.filter(id => ids.includes(id));
-
-        if (irisan.length < 2) break;
-
-        const durasi = akhir - mulai + 1;
-
-        if (durasi >= state.durasiMin) {
-          kandidat.push({
-            hari,
-            mulai,
-            selesai: akhir + 1,
-            durasi,
-            ids: irisan.slice()
-          });
-        }
-      }
-    }
-  }
-
-  const maksimal = kandidat.filter(a => !kandidat.some(b =>
-    b !== a &&
-    b.hari === a.hari &&
-    b.mulai <= a.mulai &&
-    b.selesai >= a.selesai &&
-    a.ids.every(id => b.ids.includes(id))
-  ));
-
-  const urutkan = daftar => daftar.sort((x, y) =>
-    (y.durasi - x.durasi) ||
-    (x.hari - y.hari) ||
-    (x.mulai - y.mulai)
-  );
-
-  const penuh = maksimal.filter(k => k.ids.length === n);
-
-  if (penuh.length) {
-    return { mode: 'semua', daftar: urutkan(penuh) };
-  }
-
-  if (!maksimal.length) {
-    return { mode: 'kosong', daftar: [] };
-  }
-
-  const terbanyak = Math.max(...maksimal.map(k => k.ids.length));
-
-  return {
-    mode: 'sebagian',
-    jumlah: terbanyak,
-    daftar: urutkan(maksimal.filter(k => k.ids.length === terbanyak))
-  };
-}
 
 
 /* ----- Menggambar hasil ----- */
@@ -880,7 +691,7 @@ el.form.addEventListener('submit', e => {
     return;
   }
 
-  tambahAnggota(
+  aksiTambahAnggota(
     el.inputNama.value.trim().replace(/\s+/g, ' '),
     el.inputWarna.value
   );
@@ -896,12 +707,12 @@ el.daftarAnggota.addEventListener('click', e => {
 
   const id = Number(tombol.dataset.id);
 
-  if (tombol.dataset.aksi === 'pilih') pilihAktif(id);
-  if (tombol.dataset.aksi === 'hapus') hapusAnggota(id);
+  if (tombol.dataset.aksi === 'pilih') aksiPilihAktif(id);
+  if (tombol.dataset.aksi === 'hapus') aksiHapusAnggota(id);
 });
 
 el.pilihAnggota.addEventListener('change', () => {
-  pilihAktif(Number(el.pilihAnggota.value));
+  aksiPilihAktif(Number(el.pilihAnggota.value));
 });
 
 el.btnCari.addEventListener('click', klikCari);
@@ -919,14 +730,14 @@ el.btnReset.addEventListener('click', () => {
   }).then(ya => {
     if (!ya) return;
 
-    const cadangan = JSON.stringify(state);
+    const cadangan = salinState();
 
-    state = buatStateAwal();
+    resetState();
     simpan();
     renderSemua();
     resetHasil();
 
-    tampilkanToast('Semua data dihapus.', 'Urungkan', () => pulihkan(cadangan));
+    tampilkanToast('Semua data dihapus.', 'Urungkan', () => aksiPulihkan(cadangan));
   });
 });
 
@@ -957,7 +768,7 @@ document.addEventListener('keydown', e => {
 
   if (/^[1-8]$/.test(e.key)) {
     const a = state.anggota[Number(e.key) - 1];
-    if (a) pilihAktif(a.id, true);
+    if (a) aksiPilihAktif(a.id, true);
   }
 });
 
