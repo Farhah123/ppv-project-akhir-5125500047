@@ -2,11 +2,12 @@
    state.js - pemilik data aplikasi: daftar anggota, jam kosong,
    aturan validasi, dan perhitungan waktu cocok.
    Tidak menyentuh tampilan (tidak ada document/element di sini).
-   Mengimpor: konfigurasi.js
+   Mengimpor: konfigurasi.js, storage.js
    ========================================================= */
 import {
-  HARI, JAM_MULAI, JAM_AKHIR, MAKS_ANGGOTA, MAKS_HURUF_NAMA, KUNCI_SIMPAN, WARNA
+  HARI, JAM_MULAI, JAM_AKHIR, MAKS_ANGGOTA, MAKS_HURUF_NAMA, WARNA
 } from './konfigurasi.js';
+import { muat as muatDariStorage, simpan as simpanKeStorage } from './storage.js';
 
 
 /* ----- Data ----- */
@@ -16,44 +17,26 @@ export function buatStateAwal() {
   return { anggota: [], kosong: {}, aktifId: null, durasiMin: 1, idBerikut: 1 };
 }
 
+// Mengembalikan true bila tersimpan, false bila penyimpanan gagal.
 export function simpan() {
-  try {
-   
-  } catch (e) {
-    /* abaikan */
-  }
+  return simpanKeStorage(state);
 }
 
+// muatDariStorage() selalu mengembalikan data bersih dan tidak melempar galat.
 export function muat() {
-  try {
-    const mentah = localStorage.getItem(KUNCI_SIMPAN);
-    if (!mentah) return;
+  state = Object.assign(buatStateAwal(), muatDariStorage());
+  state.durasiMin = 1;
 
-    const data = JSON.parse(mentah);
-    if (!Array.isArray(data.anggota) || typeof data.kosong !== 'object') return;
+  // Warna lama yang sudah diganti pada rilis sebelumnya.
+  const GANTI = {
+    '#6bcb9b': '#5b5f97',
+    '#4fb3bf': '#8e92b0'
+  };
 
-    state = Object.assign(buatStateAwal(), data);
-    state.durasiMin = 1;
-
-    const GANTI = {
-      '#6bcb9b': '#5b5f97',
-      '#4fb3bf': '#8e92b0'
-    };
-
-    state.anggota.forEach(a => {
-      if (GANTI[a.warna]) a.warna = GANTI[a.warna];
-    });
-
-    state.anggota.forEach(a => {
-      if (!state.kosong[a.id]) state.kosong[a.id] = {};
-    });
-
-    if (!anggotaById(state.aktifId)) {
-      state.aktifId = state.anggota.length ? state.anggota[0].id : null;
-    }
-  } catch (e) {
-    state = buatStateAwal();
-  }
+  state.anggota.forEach(a => {
+    const baru = GANTI[a.warna.toLowerCase()];
+    if (baru) a.warna = baru;
+  });
 }
 
 
