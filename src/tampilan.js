@@ -2,7 +2,7 @@
    tampilan.js - semua yang menggambar atau mengubah isi halaman:
    daftar anggota, tabel jadwal, hasil, tooltip, dan pindah tampilan.
    Membaca data dari state.js, tidak mengubahnya.
-   Mengimpor: konfigurasi.js, state.js
+   Mengimpor: konfigurasi.js, state.js, komponen.js
    ========================================================= */
 import {
   HARI, HARI_SINGKAT, JAM_MULAI, JAM_AKHIR, MAKS_HASIL_TAMPIL
@@ -10,6 +10,9 @@ import {
 import {
   state, anggotaById, jumlahJam, idKosong, warnaBerikut
 } from './state.js';
+import {
+  ItemAnggota, KartuHasil, Paragraf, Ringkasan
+} from './komponen.js';
 
 export const kurangiGerak = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -36,12 +39,6 @@ export const el = {
 
 export const fmtJam = jam => String(jam).padStart(2, '0') + '.00';
 
-export function esc(teks) {
-  return String(teks).replace(/[&<>"']/g, c => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-  ));
-}
-
 export function gabung(daftar) {
   if (daftar.length <= 1) return daftar.join('');
   return daftar.slice(0, -1).join(', ') + ' dan ' + daftar[daftar.length - 1];
@@ -58,16 +55,7 @@ export function tampilkanGalatNama(pesan) {
 export function renderAnggota() {
   el.kosongAnggota.hidden = state.anggota.length > 0;
 
-  el.daftarAnggota.innerHTML = state.anggota.map(a => `
-    <li class="anggota" data-id="${a.id}">
-      <button type="button" class="anggota-pilih" data-aksi="pilih" data-id="${a.id}">
-        <span class="swatch" style="background:${a.warna}" aria-hidden="true"></span>
-        <span class="anggota-nama">${esc(a.nama)}</span>
-        <span class="anggota-jam"></span>
-      </button>
-      <button type="button" class="tombol-teks bahaya" data-aksi="hapus" data-id="${a.id}"
-              aria-label="Hapus ${esc(a.nama)}">Hapus</button>
-    </li>`).join('');
+  el.daftarAnggota.replaceChildren(...state.anggota.map(a => ItemAnggota(a)));
 
   perbaruiStatusAnggota();
 }
@@ -90,13 +78,13 @@ export function renderPilihAnggota() {
   el.pilihAnggota.disabled = !ada;
 
   if (ada) {
-    el.pilihAnggota.innerHTML = state.anggota
-      .map((a, i) => `<option value="${a.id}">${i + 1}. ${esc(a.nama)}</option>`)
-      .join('');
+    el.pilihAnggota.replaceChildren(
+      ...state.anggota.map((a, i) => new Option(`${i + 1}. ${a.nama}`, a.id))
+    );
 
     el.pilihAnggota.value = String(state.aktifId);
   } else {
-    el.pilihAnggota.innerHTML = '<option>Belum ada anggota</option>';
+    el.pilihAnggota.replaceChildren(new Option('Belum ada anggota'));
   }
 
   const aktif = anggotaById(state.aktifId);
@@ -205,62 +193,74 @@ export function tampilkanHasilGalat(pesan) {
   status.hasilTampil = false;
   el.catatanBasi.hidden = true;
 
-  el.hasil.innerHTML = `<p class="galat-blok" role="alert">${esc(pesan)}</p>`;
+  const p = Paragraf('galat-blok', pesan);
+  p.setAttribute('role', 'alert');
+  el.hasil.replaceChildren(p);
 }
 
 export function renderHasil(hasil) {
   const n = state.anggota.length;
-  let html = '';
+  const simpul = [];
 
   const tanpaJam = state.anggota
     .filter(a => jumlahJam(a.id) === 0)
     .map(a => a.nama);
 
   if (tanpaJam.length) {
-    html += `<p class="catatan">${esc(gabung(tanpaJam))} belum menandai jam kosong, jadi belum masuk hasil.</p>`;
+    simpul.push(Paragraf(
+      'catatan',
+      `${gabung(tanpaJam)} belum menandai jam kosong, jadi belum masuk hasil.`
+    ));
   }
 
   if (hasil.mode === 'kosong') {
-    html += '<p class="ringkasan"><strong>Belum ada waktu yang cocok.</strong></p>' +
-            '<p class="ringkasan-sub">Tidak ada jam yang kosong untuk minimal 2 orang. ' +
-            'Coba tambah jam kosong.</p>';
+    simpul.push(
+      Ringkasan('Belum ada waktu yang cocok.'),
+      Paragraf('ringkasan-sub', 'Tidak ada jam yang kosong untuk minimal 2 orang. Coba tambah jam kosong.')
+    );
   } else {
     const tampil = hasil.daftar.slice(0, MAKS_HASIL_TAMPIL);
 
-    html += hasil.mode === 'semua'
-      ? `<p class="ringkasan"><strong>Ketemu! ${hasil.daftar.length} waktu cocok untuk kalian semua.</strong></p>`
-      : `<p class="ringkasan"><strong>Belum ada waktu yang cocok untuk semua.</strong> ` +
-        `Pilihan terbaik: ${hasil.jumlah} dari ${n} orang bisa.</p>`;
+    simpul.push(
+      hasil.mode === 'semua'
+        ? Ringkasan(`Ketemu! ${hasil.daftar.length} waktu cocok untuk kalian semua.`)
+        : Ringkasan(
+            'Belum ada waktu yang cocok untuk semua.',
+            `Pilihan terbaik: ${hasil.jumlah} dari ${n} orang bisa.`
+          ),
+      Paragraf('ringkasan-sub', 'Diurutkan dari yang paling panjang. Klik satu untuk menyorotnya di tabel.')
+    );
 
-    html += '<p class="ringkasan-sub">Diurutkan dari yang paling panjang. Klik satu untuk menyorotnya di tabel.</p>';
+    const daftar = document.createElement('ul');
+    daftar.className = 'daftar-hasil';
 
-    html += '<ul class="daftar-hasil">' + tampil.map(k => {
-      const yangBisa = k.ids.map(anggotaById);
+    daftar.append(...tampil.map(k => {
       const yangBelum = state.anggota
         .filter(a => !k.ids.includes(a.id))
         .map(a => a.nama);
 
-      const chips = yangBisa.map(a =>
-        `<span class="chip"><span class="swatch" style="background:${a.warna}"></span>${esc(a.nama)}</span>`
-      ).join('');
+      return KartuHasil({
+        hari: k.hari,
+        mulai: k.mulai,
+        selesai: k.selesai,
+        waktu: `${HARI[k.hari]}, ${fmtJam(k.mulai)}–${fmtJam(k.selesai)}`,
+        durasi: k.durasi,
+        yangBisa: k.ids.map(anggotaById),
+        belum: yangBelum.length ? gabung(yangBelum) : ''
+      });
+    }));
 
-      return `<li><button type="button" class="hasil-kartu" data-hari="${k.hari}" ` +
-             `data-mulai="${k.mulai}" data-selesai="${k.selesai}">` +
-             `<span class="hasil-waktu">${HARI[k.hari]}, ${fmtJam(k.mulai)}–${fmtJam(k.selesai)}</span>` +
-             `<span class="hasil-durasi">${k.durasi} jam</span>` +
-             `<span class="chips">${chips}</span>` +
-             (yangBelum.length
-               ? `<span class="hasil-belum">Belum bisa: ${esc(gabung(yangBelum))}</span>`
-               : '') +
-             '</button></li>';
-    }).join('') + '</ul>';
+    simpul.push(daftar);
 
     if (hasil.daftar.length > MAKS_HASIL_TAMPIL) {
-      html += `<p class="ringkasan-sub">Menampilkan ${MAKS_HASIL_TAMPIL} teratas dari ${hasil.daftar.length} pilihan.</p>`;
+      simpul.push(Paragraf(
+        'ringkasan-sub',
+        `Menampilkan ${MAKS_HASIL_TAMPIL} teratas dari ${hasil.daftar.length} pilihan.`
+      ));
     }
   }
 
-  el.hasil.innerHTML = html;
+  el.hasil.replaceChildren(...simpul);
   status.hasilTampil = true;
 }
 
@@ -319,19 +319,27 @@ export function tampilkanTooltip(sel) {
     .filter(a => !ids.includes(a.id))
     .map(a => a.nama);
 
-  let isi = `<strong>${HARI[hari]}, ${fmtJam(jam)}–${fmtJam(jam + 1)}</strong>`;
+  const judul = document.createElement('strong');
+  judul.textContent = `${HARI[hari]}, ${fmtJam(jam)}–${fmtJam(jam + 1)}`;
+
+  const baris = [judul];
+  const tambah = teks => {
+    const span = document.createElement('span');
+    span.textContent = teks;
+    baris.push(span);
+  };
 
   if (state.anggota.length === 0) {
-    isi += '<span>Tambahkan anggota dulu</span>';
+    tambah('Tambahkan anggota dulu');
   } else {
-    isi += `<span>Kosong: ${yangKosong.length ? esc(gabung(yangKosong)) : 'belum ada'}</span>`;
+    tambah('Kosong: ' + (yangKosong.length ? gabung(yangKosong) : 'belum ada'));
 
     if (yangKosong.length && yangBelum.length) {
-      isi += `<span>Belum: ${esc(gabung(yangBelum))}</span>`;
+      tambah('Belum: ' + gabung(yangBelum));
     }
   }
 
-  el.tooltip.innerHTML = isi;
+  el.tooltip.replaceChildren(...baris);
   el.tooltip.hidden = false;
 
   const r = sel.getBoundingClientRect();
