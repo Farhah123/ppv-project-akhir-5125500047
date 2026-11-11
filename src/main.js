@@ -2,7 +2,7 @@
    main.js - titik masuk aplikasi. Menghubungkan data (state.js),
    tampilan (tampilan.js), pustaka UI, dan bunyi, lalu memasang
    semua event dengan addEventListener.
-   Mengimpor: ui-pustaka.js, konfigurasi.js, state.js, tampilan.js, bunyi.js
+   Mengimpor: ui-pustaka.js, konfigurasi.js, state.js, storage.js, tampilan.js, bunyi.js
    ========================================================= */
 import { UI } from './ui-pustaka.js';
 import { DURASI_MEMUAT } from './konfigurasi.js';
@@ -18,6 +18,7 @@ import {
   tampilkanTooltip, sembunyikanTooltip, show, getar
 } from './tampilan.js';
 import { bunyi, alihBunyi } from './bunyi.js';
+import { penyimpananTersedia } from './storage.js';
 
 
 /* ----- Aksi: data berubah, lalu tampilan diperbarui ----- */
@@ -26,8 +27,25 @@ function tampilkanToast(teks, labelAksi, aksi) {
   UI.toast(teks, labelAksi, aksi);
 }
 
+let sudahDiperingatkan = false;
+
+const PESAN_TIDAK_TERSIMPAN =
+  'Penyimpanan browser tidak tersedia atau penuh, jadi data tidak akan tersimpan setelah halaman ditutup.';
+
+// Menyimpan data; bila gagal, pengguna diberi tahu satu kali.
+function simpanData() {
+  const berhasil = simpan();
+
+  if (!berhasil && !sudahDiperingatkan) {
+    sudahDiperingatkan = true;
+    tampilkanToast(PESAN_TIDAK_TERSIMPAN);
+  }
+
+  if (berhasil) sudahDiperingatkan = false;
+}
+
 function setelahUbah() {
-  simpan();
+  simpanData();
   renderSemua();
   tandaiBasi();
 }
@@ -52,7 +70,7 @@ function aksiPilihAktif(id, beriTahu) {
   const a = setAktif(id);
   if (!a) return;
 
-  simpan();
+  simpanData();
   renderPilihAnggota();
   perbaruiStatusAnggota();
   perbaruiGrid();
@@ -74,7 +92,7 @@ function terapkanSel(sel, nilai) {
 
   perbaruiSel(sel);
   perbaruiStatusAnggota();
-  simpan();
+  simpanData();
   tandaiBasi();
 
   if (nilai && idKosong(Number(sel.dataset.hari), Number(sel.dataset.jam)).length >= 2) {
@@ -360,7 +378,7 @@ el.btnReset.addEventListener('click', () => {
     const cadangan = salinState();
 
     resetState();
-    simpan();
+    simpanData();
     renderSemua();
     resetHasil();
 
@@ -410,6 +428,7 @@ document.getElementById('btnBunyi').addEventListener('click', alihBunyi);
 /* ----- Mulai aplikasi ----- */
 
 muat();
+if (!penyimpananTersedia()) tampilkanToast(PESAN_TIDAK_TERSIMPAN);
 buatGrid();
 renderSemua();
 resetHasil();
