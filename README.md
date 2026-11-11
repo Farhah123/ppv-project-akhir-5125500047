@@ -24,7 +24,7 @@ Font memakai Google Fonts, jadi butuh internet agar tampil sesuai desain. Tanpa 
 - Validasi masukan dengan pesan kesalahan yang ramah (nama kosong, nama ganda, warna terlalu pucat atau mirip, dan lainnya)
 - Tampilan kosong (belum ada data) dan tampilan memuat (saat mencari)
 - Hasil tampil langsung tanpa memuat ulang halaman
-- Data tersimpan otomatis di browser
+- Data tersimpan otomatis di browser, dan tetap aman bila data tersimpan rusak
 - Pintasan keyboard (Enter, angka 1-8, tombol panah, Ctrl + Enter, Esc)
 
 ## Daftar event yang dipakai
@@ -57,6 +57,42 @@ Pengujian dilakukan dengan mencoba menandai jam kosong dan mencari waktu cocok, 
 - **Tema:** diubah lewat variabel CSS Bootstrap (`--bs-toast-bg`, `--bs-modal-bg`, `--bs-offcanvas-bg`, dan lainnya) di bagian 9 `style.css`.
 - **Pembungkus:** semua panggilan API JavaScript Bootstrap hanya ada di `ui-pustaka.js`; `script.js` memakai `UI.toast()`, `UI.konfirmasi()`, dan `UI.bukaPintasan()`.
 - **Penyesuaian:** kelas `.tooltip` buatan sendiri diganti `.tip-kotak` karena bentrok dengan `.tooltip` milik Bootstrap. Toast buatan sendiri diganti Bootstrap Toast.
+## Sprint 4: Komponen, penyimpanan aman, dan perawatan
+
+### Kontrak komponen (`src/komponen.js`)
+
+Setiap komponen menerima data lewat parameter, mengembalikan elemen DOM, dan memasukkan teks pengguna lewat `textContent`. Berkas ini tidak mengimpor modul lain, jadi tidak bergantung pada `state`.
+
+| Komponen | Parameter | Mengembalikan | Dipakai di |
+|---|---|---|---|
+| `ChipAnggota` | `{ nama, warna }` | `<span class="chip">` | Di dalam `KartuHasil`, sekali untuk tiap anggota yang bisa |
+| `ItemAnggota` | `{ id, nama, warna }` | `<li class="anggota">` | `renderAnggota()`, untuk semua item daftar anggota |
+| `KartuHasil` | `{ hari, mulai, selesai, waktu, durasi, yangBisa, belum }` | `<li>` berisi tombol `.hasil-kartu` | `renderHasil()`, untuk semua item daftar hasil |
+| `Paragraf` | `kelas, teks` | `<p>` | Catatan, keterangan hasil, dan pesan galat |
+| `Ringkasan` | `tebal, biasa` | `<p class="ringkasan">` | Kalimat ringkasan di atas daftar hasil |
+
+### Kontrak penyimpanan (`src/storage.js`)
+
+- `KUNCI`: `cariJamKosongBareng.v1`. Angka versi dinaikkan bila bentuk data berubah.
+- `muat()`: selalu mengembalikan data bersih berbentuk `{ anggota, kosong, aktifId, idBerikut }` dan tidak pernah melempar galat. Data yang belum ada, bukan JSON, atau bukan objek diganti data kosong. Anggota yang rusak, kembar, atau terlalu banyak dibuang, nama maksimal 20 huruf, warna harus berbentuk `#rrggbb`, dan jam kosong di luar jadwal dibuang.
+- `simpan(data)`: memakai try/catch dan mengembalikan `true` bila berhasil atau `false` bila gagal.
+- `penyimpananTersedia()`: `false` bila `localStorage` diblokir atau penuh. Saat itu aplikasi memakai cadangan di memori dan memberi tahu pengguna lewat toast.
+
+### Uji skenario rusak
+
+Semua dilakukan di DevTools (Application, Local Storage, kunci `cariJamKosongBareng.v1`), lalu halaman dimuat ulang.
+
+| Skenario | Isi yang dimasukkan | Hasil yang diharapkan |
+|---|---|---|
+| S1 | Kunci belum ada | Daftar kosong, aplikasi siap dipakai |
+| S2 | `{rusak` | Aplikasi tetap terbuka, anggota baru bisa ditambah |
+| S3 | `"teks"` | Sama dengan S2 |
+| S4 | `{"a":1}` | Sama dengan S2 |
+| S5 | Array berisi `null`, angka, dan satu anggota sah | Hanya anggota yang sah tampil |
+| S6 | `localStorage` diblokir atau penuh | Aplikasi tetap jalan, pengguna diberi tahu data tidak tersimpan |
+
+Bukti uji manual S2 dan S6 dilampirkan di laporan Tugas P12.
+
 ## Catatan penggunaan AI
 
 Pemecahan kode menjadi modul ES (Tugas P11, Sprint 3) dibantu oleh Claude (Anthropic).
@@ -64,3 +100,9 @@ Pemecahan kode menjadi modul ES (Tugas P11, Sprint 3) dibantu oleh Claude (Anthr
 - **Dibantu AI:** isi `src/konfigurasi.js`, `src/state.js`, `src/tampilan.js`, `src/bunyi.js`, `src/main.js`, serta perubahan `export` pada `src/ui-pustaka.js`, dan draf `MODULE_MAP.md`. Kode ini dihasilkan dengan memindahkan dan memisahkan kode `script.js` milik saya sendiri tanpa mengubah perilakunya.
 - **Prompt utama:** "tugas P11 pecah kode proyek jadi modul ES, langkah selanjutnya apa" (dengan melampirkan berkas tugas dan kode proyek), lalu dilanjutkan percakapan langkah demi langkah.
 - **Dikerjakan sendiri:** logika aplikasi asli (`script.js` sebelum refactor), pengujian di browser, dan seluruh commit di Git.
+
+Perbaikan Sprint 4 (Tugas P12) juga dibantu oleh Claude (Anthropic).
+
+- **Dibantu AI:** isi `src/storage.js` dan `src/komponen.js`, perubahan pada `src/state.js` (fungsi `simpan()` dan `muat()`), `src/tampilan.js` (memakai komponen), dan `src/main.js` (pesan saat penyimpanan gagal), serta draf `CHANGELOG.md` dan pembaruan dokumen ini.
+- **Prompt utama:** "tugas P12 anti banting komponen dan penyimpanan aman, terapkan ke proyek akhir" (dengan melampirkan berkas tugas dan kode proyek), lalu dilanjutkan percakapan langkah demi langkah.
+- **Dikerjakan sendiri:** logika aplikasi asli, uji manual di DevTools, dan seluruh commit serta tag di Git.
