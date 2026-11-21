@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Halaman Konsep Produk — Templat Tugas 7</title>
+  <style>
+    :root { --biru: #1f3b63; --aksen: #2f7de1; --abu: #5b6470; --merah: #b42318; --hijau: #1e7b4f; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, "Segoe UI", sans-serif; background: #f5f7fa; color: #1d2430; line-height: 1.5; }
+    header { background: var(--biru); color: #fff; padding: 24px 16px; }
+    header h1 { margin: 0 0 4px; font-size: 1.6rem; }
+    header p { margin: 0; opacity: .9; }
+    main { max-width: 860px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+    section { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 2px #0000001a; }
+    h2 { margin: 0 0 8px; font-size: 1.1rem; color: var(--biru); }
+    .kolom { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .label { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--abu); }
+    ul { margin: 4px 0 0; padding-left: 18px; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { border: 1px solid #dde3ea; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #eef2f7; }
+    .periksa li.gagal { color: var(--merah); }
+    .periksa li.lolos { color: var(--hijau); }
+    @media print { header { background: #fff; color: var(--biru); } section { box-shadow: none; border: 1px solid #dde3ea; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="nama"></h1>
+    <p id="tagline"></p>
+  </header>
+  <main>
+    <section class="periksa" aria-live="polite">
+      <h2>Pemeriksa konsep</h2>
+      <ul id="periksa"></ul>
+    </section>
+    <section>
+      <h2>Persona</h2>
+      <div class="kolom" id="persona"></div>
+    </section>
+    <section class="kolom">
+      <div><h2>Masalah</h2><p id="masalah"></p></div>
+      <div><h2>Usulan solusi</h2><p id="solusi"></p></div>
+    </section>
+    <section>
+      <h2>Fitur berprioritas</h2>
+      <div class="kolom" id="fitur"></div>
+    </section>
+    <section>
+      <h2>Perbandingan dengan aplikasi sejenis</h2>
+      <div style="overflow-x:auto"><table id="banding"></table></div>
+    </section>
+  </main>
+  <script src="konsep.js" defer></script>
+  <script src="tampil.js" defer></script>
+</body>
+</html>
